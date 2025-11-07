@@ -36,6 +36,7 @@
 			return;
 		}
 		const result = await response.json();
+		console.log('Données récupérées depuis l\'URL :', result);
 		title = result.product_title || '';
 		price = result.price || '';
 		image_url = result.images && result.images.length > 0 ? result.images[0] : '';
