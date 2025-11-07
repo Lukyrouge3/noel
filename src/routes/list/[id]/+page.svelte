@@ -2,17 +2,15 @@
 	import type { Tables } from '$lib/supabase.js';
 
 	const { data, params } = $props();
-	const { supabase, session } = $derived(data);
-	const wishes = $derived(supabase.from('wishes').select('*, buy_intentions(*)').eq('user_id', params.id).eq('deleted', false));
+	const { supabase, session, wishes, profile } = data;
 
 	const userIsOwner = session && session.user.id === params.id;
-	const {data: profile} = await supabase.from('profiles').select('*').eq('id', params.id).single();
 
 	// Modal state and form fields (UI only)
 	let showModal = $state(false);
 	let url = $state('');
 	let title = $state('');
-	let price = $state('');
+	let price = $state(0);
 	let image_url = $state('');
 	let quantity = $state(1);
 	let description = $state('');
@@ -37,10 +35,10 @@
 		}
 		const result = await response.json();
 		console.log('Données récupérées depuis l\'URL :', result);
-		title = result.product_title || '';
-		price = result.price || '';
+		title = result.product_title;
+		price = parseFloat(result.price);
 		image_url = result.images && result.images.length > 0 ? result.images[0] : '';
-	} catch (err) {
+		} catch (err) {
 			alert('Erreur lors de la récupération des données depuis l\'URL : ' + err.message);
 		} finally {
 			loading_url = false;
@@ -54,7 +52,7 @@
 			user_id: params.id,
 			url,
 			title,
-			price: parseFloat(price),
+			price: price,
 			image_url,
 			quantity: quantity,
 			description
@@ -83,7 +81,7 @@
 
 	async function buyIntentToggle(wish: Tables<'wishes'> & { buy_intentions: Tables<'buy_intentions'>[]}) {
 		console.log(wish);
-		const alreadyIntended = wish.buy_intentions.find(intent => intent.user_id === session.user.id);
+		const alreadyIntended = wish.buy_intentions.find(intent => intent.user_id === session!.user.id);
 		if (alreadyIntended) {
 			// Remove intention
 			const { error } = await supabase.from('buy_intentions').delete().eq('id', alreadyIntended.id);
@@ -95,21 +93,21 @@
 		} else {
 			// Add intention
 			const { error } = await supabase.from('buy_intentions').insert({
-				user_id: session.user.id,
+				user_id: session!.user.id,
 				wish_id: wish.id
 			});
 			if (error) {
 				alert('Erreur lors de l\'ajout de l\'intention d\'achat : ' + error.message);
 				return;
 			}
-			wish.buy_intentions.push({ id: -1, user_id: session.user.id, wish_id: wish.id });
+			wish.buy_intentions.push({ id: -1, user_id: session!.user.id, wish_id: wish.id, created_at: new Date().toISOString()});
 		}
 	}
 
 </script>
 
 <main class="min-h-screen bg-slate-50 p-6">
-	<div class="max-w-5xl mx-auto">'
+	<div class="max-w-5xl mx-auto">
 		<header class="flex items-center justify-between mb-6">
 			<div class="mb-4">
 				<a href="/" class="inline-flex items-center gap-2 text-sm text-slate-700 bg-white/60 px-3 py-1 rounded hover:bg-white hover:shadow focus:outline-none focus:ring-2 focus:ring-red-400" aria-label="Retour à l'accueil">
@@ -135,19 +133,7 @@
 		</header>
 
 		<section class="bg-white rounded-lg shadow p-4">
-			{#await wishes}
-				<div class="flex items-center justify-center py-12">
-					<svg class="h-8 w-8 animate-spin text-red-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-					</svg>
-					<span class="sr-only">Chargement...</span>
-				</div>
-			{:then result}
-				{#if result.error}
-					<div class="p-4 bg-red-50 text-red-700 rounded">Erreur lors du chargement : {result.error.message}</div>
-				{:else}
-					{#if result.data.length === 0}
+					{#if wishes == null || wishes.length === 0}
 						<div class="p-8 text-center text-slate-500">Votre wishlist est vide. Cliquez sur « Ajouter un élément » pour commencer.</div>
 					{:else}
 						<div class="overflow-x-auto">
@@ -163,7 +149,7 @@
 									</tr>
 								</thead>
 								<tbody class="divide-y">
-									{#each result.data as wish}
+									{#each wishes as wish}
 										<tr class="hover:bg-slate-50">
 											<td class="px-4 py-3">
 												<div class="flex items-center gap-3">
@@ -194,7 +180,7 @@
 														<input
 															type="checkbox"
 															class="sr-only peer"
-															disabled={wish.buy_intentions.length > 0 && !wish.buy_intentions.some(intent => intent.user_id === session.user.id)}
+															disabled={wish.buy_intentions.length > 0 && !wish.buy_intentions.some(intent => intent.user_id === session?.user.id)}
 															checked={wish.buy_intentions.length > 0}
 															onchange={() => buyIntentToggle(wish)}
 														/>
@@ -205,7 +191,7 @@
 															aria-hidden="true"
 														></span>
 														<span class="text-sm text-slate-700 peer-disabled:text-slate-400">
-															{wish.buy_intentions.length > 0 && !wish.buy_intentions.some(intent => intent.user_id === session.user.id) ? 'Réservé par qqn d\'autre' : 'Je vais l\'acheter'}</span>
+															{wish.buy_intentions.length > 0 && !wish.buy_intentions.some(intent => intent.user_id === session?.user.id) ? 'Réservé par qqn d\'autre' : 'Je vais l\'acheter'}</span>
 													</label>
 													{/if}
 												</div>
@@ -216,72 +202,67 @@
 							</table>
 						</div>
 					{/if}
-				{/if}
-			{:catch err}
-				<div class="p-4 bg-red-50 text-red-700 rounded">Erreur lors du chargement : {err.message}</div>
-			{/await}
 		</section>
 	</div>
+</main>
+{#if showModal}
+		<div class="fixed inset-0 z-40 flex items-center justify-center">
+			<div class="absolute inset-0 bg-black/40" onclick={() => showModal = false} aria-hidden="true"></div>
+			<div class="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 z-50">
+				<div class="p-6">
+					<h3 class="text-lg font-semibold mb-4">Ajouter un élément</h3>
 
-		{#if showModal}
-			<div class="fixed inset-0 z-40 flex items-center justify-center">
-				<div class="absolute inset-0 bg-black/40" onclick={() => showModal = false} aria-hidden="true"></div>
-				<div class="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 z-50">
-					<div class="p-6">
-						<h3 class="text-lg font-semibold mb-4">Ajouter un élément</h3>
+					<div class="space-y-4">
+										<div class="flex gap-2">
+											<label for="modal-url" class="sr-only">URL du produit</label>
+											<input id="modal-url" name="url" type="url" placeholder="URL du produit" bind:value={url} class="flex-1 rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" />
+											<button type="button" onclick={fetchFromUrl} class="inline-flex items-center gap-2 bg-slate-100 px-3 py-2 rounded-md hover:bg-slate-200" disabled={loading_url}>
+												
+												{#if loading_url}
+													<!-- Spinner -->
+													<svg class="h-4 w-4 animate-spin text-red-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+														<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+														<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+													</svg>
+												{:else}
+												Charger
+												{/if}
+												</button>
+										</div>
 
-						<div class="space-y-4">
-											<div class="flex gap-2">
-												<label for="modal-url" class="sr-only">URL du produit</label>
-												<input id="modal-url" name="url" type="url" placeholder="URL du produit" bind:value={url} class="flex-1 rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" />
-												<button type="button" onclick={fetchFromUrl} class="inline-flex items-center gap-2 bg-slate-100 px-3 py-2 rounded-md hover:bg-slate-200" disabled={loading_url}>
-													{#if loading_url}
-														<!-- Spinner -->
-														<svg class="h-4 w-4 animate-spin text-red-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-															<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-															<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-														</svg>
-													{:else}
-													Charger
-													{/if}
-													</button>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<div>
+												<label for="modal-title" class="block text-sm text-slate-700 mb-1">Titre</label>
+												<input id="modal-title" name="title" type="text" bind:value={title} class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" />
 											</div>
-
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-												<div>
-													<label for="modal-title" class="block text-sm text-slate-700 mb-1">Titre</label>
-													<input id="modal-title" name="title" type="text" bind:value={title} class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" required />
-												</div>
-
-												<div>
-													<label for="modal-price" class="block text-sm text-slate-700 mb-1">Prix</label>
-													<input id="modal-price" name="price" type="number" step="0.01" bind:value={price} class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" required />
-												</div>
-
-												<div>
-													<label for="modal-image" class="block text-sm text-slate-700 mb-1">Image URL</label>
-													<input id="modal-image" name="image_url" type="url" bind:value={image_url} class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" />
-												</div>
-
-												<div>
-													<label for="modal-quantity" class="block text-sm text-slate-700 mb-1">Quantité</label>
-													<input id="modal-quantity" name="quantity" type="number" min="1" bind:value={quantity} class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" />
-												</div>
-							</div>
 
 											<div>
-												<label for="modal-description" class="block text-sm text-slate-700 mb-1">Description</label>
-												<textarea id="modal-description" name="description" bind:value={description} rows="4" class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"></textarea>
+												<label for="modal-price" class="block text-sm text-slate-700 mb-1">Prix</label>
+												<input id="modal-price" name="price" type="number" step="0.01" bind:value={price} class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" required />
+											</div>
+
+											<div>
+												<label for="modal-image" class="block text-sm text-slate-700 mb-1">Image URL</label>
+												<input id="modal-image" name="image_url" type="url" bind:value={image_url} class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" />
+											</div>
+
+											<div>
+												<label for="modal-quantity" class="block text-sm text-slate-700 mb-1">Quantité</label>
+												<input id="modal-quantity" name="quantity" type="number" min="1" bind:value={quantity} class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400" />
 											</div>
 						</div>
 
-						<div class="mt-6 flex items-center justify-end gap-3">
-							<button type="button" onclick={() => showModal = false} class="px-4 py-2 rounded-md bg-slate-100 hover:bg-slate-200">Annuler</button>
-							<button type="button" onclick={submitWish} class="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700">Ajouter</button>
-						</div>
+										<div>
+											<label for="modal-description" class="block text-sm text-slate-700 mb-1">Description</label>
+											<textarea id="modal-description" name="description" bind:value={description} rows="4" class="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"></textarea>
+										</div>
+					</div>
+
+					<div class="mt-6 flex items-center justify-end gap-3">
+						<button type="button" onclick={() => showModal = false} class="px-4 py-2 rounded-md bg-slate-100 hover:bg-slate-200">Annuler</button>
+						<button type="button" onclick={submitWish} class="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700">Ajouter</button>
 					</div>
 				</div>
 			</div>
-		{/if}
-
-</main>
+		</div>
+	{/if}
