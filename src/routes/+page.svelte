@@ -74,7 +74,7 @@
 										<div class="flex items-center gap-3">
 											<div class="h-10 w-10 rounded-full bg-red-600 text-white flex items-center justify-center font-semibold overflow-hidden flex-none">{username.charAt(0).toUpperCase()}</div>
 											<div class="text-left">
-												<p class="text-sm font-medium text-slate-900">{username}</p>
+												<p class="text-sm font-medium text-slate-900 capitalize">{username}</p>
 												<p class="text-xs text-slate-500">Nombres d'items: <span class="font-mono text-xs text-slate-400 truncate">{profile.wishes.length}</span></p>
 											</div>
 										</div>
