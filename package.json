@@ -47,6 +47,7 @@
 		"@mozilla/readability": "^0.6.0",
 		"@supabase/ssr": "^0.7.0",
 		"@supabase/supabase-js": "^2.80.0",
+		"@sveltejs/adapter-node": "^5.4.0",
 		"dompurify": "^3.3.0",
 		"jsdom": "^27.1.0",
 		"openai": "^6.8.1",
