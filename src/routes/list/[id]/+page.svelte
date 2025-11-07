@@ -153,7 +153,7 @@
 										<tr class="hover:bg-slate-50">
 											<td class="px-4 py-3">
 												<div class="flex items-center gap-3">
-													<img src={wish.image_url} alt="" class="h-12 w-12 rounded-md object-cover flex-none" />
+													<img src={wish.image_url != "" ? wish.image_url : 'https://placehold.co/400'} alt="" class="h-12 w-12 rounded-md object-cover flex-none" />
 													<div class="min-w-0 text-left">
 														<div class="font-medium text-slate-900 break-words">{wish.title}</div>
 														<div class="text-xs text-slate-500 break-words">{wish.description}</div>
