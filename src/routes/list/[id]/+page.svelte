@@ -160,7 +160,7 @@
 													</div>
 												</div>
 											</td>
-											<td class="px-4 py-3">{wish.price ? `${wish.price}` : '0.00'} €</td>
+											<td class="px-4 py-3">{wish.price ? `${wish.price}` : '?'} €</td>
 											<td class="px-4 py-3">{wish.quantity}</td>
 											<td class="px-4 py-3">{new Date(wish.created_at).toLocaleDateString()}</td>
 											<td class="px-4 py-3">
