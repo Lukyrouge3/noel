@@ -24,8 +24,3 @@ CREATE POLICY "Allow owners to delete their buy intentions" ON buy_intentions
 CREATE POLICY "Allow owners to insert their buy intentions" ON buy_intentions
 		FOR INSERT
 		WITH CHECK (auth.uid() = user_id);
-
-CREATE TRIGGER update_buy_intentions_updated_at
-	BEFORE UPDATE ON buy_intentions
-	FOR EACH ROW
-	EXECUTE FUNCTION update_updated_at_column();

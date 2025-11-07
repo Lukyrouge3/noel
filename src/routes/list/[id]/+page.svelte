@@ -1,9 +1,12 @@
 <script lang="ts">
+	import type { Tables } from '$lib/supabase.js';
+
 	const { data, params } = $props();
 	const { supabase, session } = $derived(data);
 	const wishes = $derived(supabase.from('wishes').select('*, buy_intentions(*)').eq('user_id', params.id).eq('deleted', false));
 
 	const userIsOwner = session && session.user.id === params.id;
+	const {data: profile} = await supabase.from('profiles').select('*').eq('id', params.id).single();
 
 	// Modal state and form fields (UI only)
 	let showModal = $state(false);
@@ -76,21 +79,58 @@
 		// refresh the page for now but should just refresh the wishes list
 		window.location.reload();
 	}
+
+	async function buyIntentToggle(wish: Tables<'wishes'> & { buy_intentions: Tables<'buy_intentions'>[]}) {
+		console.log(wish);
+		const alreadyIntended = wish.buy_intentions.find(intent => intent.user_id === session.user.id);
+		if (alreadyIntended) {
+			// Remove intention
+			const { error } = await supabase.from('buy_intentions').delete().eq('id', alreadyIntended.id);
+			if (error) {
+				alert('Erreur lors de la suppression de l\'intention d\'achat : ' + error.message);
+				return;
+			}
+			console.log('Intention removed', alreadyIntended);
+		} else {
+			// Add intention
+			const { error } = await supabase.from('buy_intentions').insert({
+				user_id: session.user.id,
+				wish_id: wish.id
+			});
+			if (error) {
+				alert('Erreur lors de l\'ajout de l\'intention d\'achat : ' + error.message);
+				return;
+			}
+			wish.buy_intentions.push({ id: -1, user_id: session.user.id, wish_id: wish.id });
+		}
+	}
+
 </script>
 
 <main class="min-h-screen bg-slate-50 p-6">
-	<div class="max-w-5xl mx-auto">
+	<div class="max-w-5xl mx-auto">'
 		<header class="flex items-center justify-between mb-6">
-			<h1 class="text-2xl font-semibold text-slate-900">Ma wishlist</h1>
-			<div class="flex items-center gap-3">
-				<button type="button" onclick={() => showModal = true} class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-md shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
-					<!-- plus icon -->
-					<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+			<div class="mb-4">
+				<a href="/" class="inline-flex items-center gap-2 text-sm text-slate-700 bg-white/60 px-3 py-1 rounded hover:bg-white hover:shadow focus:outline-none focus:ring-2 focus:ring-red-400" aria-label="Retour à l'accueil">
+					<svg class="h-4 w-4 text-slate-700" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+						<path d="M10 3L4 10l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 					</svg>
-					Ajouter un élément
-				</button>
+					Accueil
+				</a>
 			</div>
+			<h1 class="text-2xl font-semibold text-slate-900">
+				{userIsOwner ? 'Ma wishlist' : `Wishlist de ${profile?.username || profile?.email.split('@')[0]}`}</h1>
+				{#if userIsOwner}
+					<div class="flex items-center gap-3">
+						<button type="button" onclick={() => showModal = true} class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-md shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+							<!-- plus icon -->
+							<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+							</svg>
+							Ajouter un élément
+						</button>
+					</div>
+				{/if}
 		</header>
 
 		<section class="bg-white rounded-lg shadow p-4">
@@ -145,8 +185,28 @@
 											</td>
 											<td class="px-4 py-3">
 												<div class="flex items-center justify-end gap-2">
+													{#if userIsOwner}
 													<!-- <button class="text-sm text-slate-700 bg-slate-100 px-3 py-1 rounded hover:bg-slate-200" onclick={() => {}}>Modifier</button> -->
 													<button class="text-sm text-white bg-red-600 px-3 py-1 rounded hover:bg-red-700" onclick={() => deleteWish(wish.id)}>Supprimer</button>
+													{:else}
+													<label class="inline-flex items-center gap-2 select-none text-sm">
+														<input
+															type="checkbox"
+															class="sr-only peer"
+															disabled={wish.buy_intentions.length > 0 && !wish.buy_intentions.some(intent => intent.user_id === session.user.id)}
+															checked={wish.buy_intentions.length > 0}
+															onchange={() => buyIntentToggle(wish)}
+														/>
+														<span
+															class="w-4 h-4 rounded border border-slate-300 bg-white flex-none transition-colors
+															peer-checked:bg-green-600 peer-checked:border-green-600
+															peer-disabled:bg-slate-100 peer-disabled:border-slate-200 peer-disabled:opacity-60 peer-disabled:cursor-not-allowed"
+															aria-hidden="true"
+														></span>
+														<span class="text-sm text-slate-700 peer-disabled:text-slate-400">
+															{wish.buy_intentions.length > 0 && !wish.buy_intentions.some(intent => intent.user_id === session.user.id) ? 'Réservé par qqn d\'autre' : 'Je vais l\'acheter'}</span>
+													</label>
+													{/if}
 												</div>
 											</td>
 										</tr>
