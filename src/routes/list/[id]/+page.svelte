@@ -189,7 +189,7 @@
 													<!-- <button class="text-sm text-slate-700 bg-slate-100 px-3 py-1 rounded hover:bg-slate-200" onclick={() => {}}>Modifier</button> -->
 													<button class="text-sm text-white bg-red-600 px-3 py-1 rounded hover:bg-red-700" onclick={() => deleteWish(wish.id)}>Supprimer</button>
 													{:else}
-													<label class="inline-flex items-center gap-2 select-none text-sm">
+													<label class="inline-flex items-center gap-2 select-none text-sm cursor-pointer">
 														<input
 															type="checkbox"
 															class="sr-only peer"

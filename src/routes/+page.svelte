@@ -1,9 +1,20 @@
 <script lang="ts">
 	const {data} = $props();
 
-	const { session, supabase } = $derived(data);
+	const { session, supabase, problems } = $derived(data);
 
 	const wish_lists = $derived(supabase.from('profiles').select('*, wishes(id)'));
+
+
+	async function removeIntention(wish_id: number) {
+		const { error } = await supabase.from('buy_intentions').delete().eq('user_id', session!.user.id).eq('wish_id', wish_id);
+		if (error) {
+			alert('Erreur lors de la suppression de l\'intention d\'achat : ' + error.message);
+			return;
+		}
+		// Refresh the page to update the problems list
+		window.location.reload();
+	}
 </script>
 
 {#if session}
@@ -11,6 +22,17 @@
 		<div class="max-w-3xl w-full bg-white rounded-2xl shadow-md p-8 text-center">
 			<h1 class="text-3xl font-semibold text-slate-900 mb-4">Bienvenue sur Noël ! 🎄</h1>
 			<p class="text-lg text-slate-600 mb-6">Vous êtes connecté en tant que <strong>{session.user.email}</strong>.</p>
+			{#if problems.length > 0}
+				<div class="mb-6 p-4 bg-yellow-50 text-yellow-700 rounded-md">
+					<h2 class="text-lg font-medium mb-2">Problèmes détectés !</h2>
+					<p>Certains articles que vous avez prévu d'acheter ne sont plus dans la wishlist.</p>
+					<ul class="list-disc list-inside text-left">
+						{#each problems as problem}
+							<li>L'item "<strong>{problem.title}</strong>" dans la wishlist de <strong>{problem.profiles?.email}</strong> n'existe plus. <button class="text-red-600 hover:text-red-500" onclick={() => removeIntention(problem.id)}>Enlever l'intention d'achat</button></li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
 			<div class="flex items-center justify-center gap-3">
 				<a href="/list/{session.user.id}" class="inline-flex items-center bg-red-600 text-white px-5 py-2.5 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 transition">
 					Ma wishlist
@@ -18,7 +40,7 @@
 
 				<a
 					class="inline-block bg-white text-red-600 border border-red-600 px-6 py-3 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition"
-					href="/logout"
+					href="/logout" data-sveltekit-preload-data="false"
 				>
 					Se déconnecter
 				</a>
