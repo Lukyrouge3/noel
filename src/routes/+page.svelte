@@ -55,7 +55,12 @@
 				>
 					Ma wishlist
 				</a>
-
+				<a
+					class="inline-block rounded-md border border-red-600 bg-white px-6 py-3 text-red-600 transition hover:bg-red-50 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
+					href="/shopping"
+				>
+					Mes achats
+				</a>
 				<a
 					class="inline-block rounded-md border border-red-600 bg-white px-6 py-3 text-red-600 transition hover:bg-red-50 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
 					href="/logout"
