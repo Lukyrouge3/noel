@@ -5,14 +5,16 @@
 	let {
 		onClose,
 		onImported,
-		onManual
+		onManual,
+		initialUrl = ''
 	}: {
 		onClose: () => void;
 		onImported: (result: ImportResult) => void;
 		onManual: () => void;
+		initialUrl?: string;
 	} = $props();
 
-	let url = $state('');
+	let url = $state(initialUrl.trim());
 	let loading = $state(false);
 	let loadingImage = $state(false);
 	let error = $state('');

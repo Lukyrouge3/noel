@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { invalidateAll } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import ImportModal from '$lib/components/ImportModal.svelte';
 	import ReservationToggle from '$lib/components/ReservationToggle.svelte';
@@ -25,6 +27,7 @@
 
 	let showImport = $state(false);
 	let showModal = $state(false);
+	let importUrl = $state('');
 	let draft = $state<Partial<WishPayload> | null>(null);
 	let editingWish = $state<Tables<'wishes'> | null>(null);
 	let notice = $state<string | null>(null);
@@ -32,10 +35,19 @@
 
 	const displayName = $derived(profile?.display_name ?? 'Utilisateur');
 
+	onMount(() => {
+		const shared = page.url.searchParams.get('import');
+		if (shared && userIsOwner) {
+			importUrl = shared;
+			showImport = true;
+		}
+	});
+
 	function openImport() {
 		editingWish = null;
 		draft = null;
 		notice = null;
+		importUrl = '';
 		showImport = true;
 	}
 
@@ -430,7 +442,11 @@
 
 {#if showImport}
 	<ImportModal
-		onClose={() => (showImport = false)}
+		initialUrl={importUrl}
+		onClose={() => {
+			showImport = false;
+			importUrl = '';
+		}}
 		onImported={handleImported}
 		onManual={openManual}
 	/>

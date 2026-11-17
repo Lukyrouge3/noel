@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
+	import InstallHint from '$lib/components/InstallHint.svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
@@ -29,6 +30,7 @@
 <div class="min-h-dvh">
 	{#if session}
 		<AppHeader {session} />
+		<InstallHint />
 	{/if}
 	{@render children()}
 </div>

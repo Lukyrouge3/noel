@@ -4,10 +4,11 @@ import {
 	extractImagesFromMarkdown,
 	extractMetadata,
 	normalizeCurrency,
-	normalizeImage
+	normalizeImage,
+	pickBestImage
 } from './metadata';
 import { extractWithLlm, type LlmExtraction } from './llm';
-import { fetchWithReader, readerConfigured } from './reader';
+import { fetchWithJinaReader, fetchWithReader, readerConfigured, readerProvider } from './reader';
 import { emptyProduct, type ImportResult, type ProductImport } from './schema';
 import { assertPublicHttpUrl, ImportUrlError } from './ssrf';
 
@@ -37,6 +38,35 @@ function isComplete(product: ProductImport): boolean {
 	return Boolean(product.title && product.image_url && product.price !== null);
 }
 
+function isGenericTitle(title: string | null, url: string): boolean {
+	if (!title) return true;
+
+	const normalized = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+	const host = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+	const hostCompact = host.replace(/[^a-z0-9]/g, '');
+	const brand = host.split('.')[0].replace(/[^a-z0-9]/g, '');
+	const generic = new Set([
+		hostCompact,
+		brand,
+		'amazon',
+		'lego',
+		'fnac',
+		'darty',
+		'decathlon',
+		'accueil',
+		'home',
+		'connexion',
+		'login',
+		'signin',
+		'captcha',
+		'justamoment',
+		'accessdenied',
+		'boutique'
+	]);
+
+	return normalized.length < 3 || generic.has(normalized);
+}
+
 function addWarning(warnings: string[], message: string): void {
 	if (!warnings.includes(message)) warnings.push(message);
 }
@@ -51,13 +81,23 @@ function finish(
 	if (ok && product.price === null) addWarning(warnings, "Le prix n'a pas pu être lu.");
 	if (ok && !product.image_url) addWarning(warnings, "L'image n'a pas pu être lue.");
 	if (ok && warnings.length > 0) addWarning(warnings, 'Vérifiez les informations avant d’ajouter.');
+	if (!ok) addWarning(warnings, 'Essayez une capture d’écran ou remplissez l’article à la main.');
+
+	const complete = ok && isComplete(product);
+	const visibleWarnings = complete
+		? warnings.filter(
+				(warning) =>
+					!warning.includes('refuse la lecture automatique') &&
+					warning !== 'Vérifiez les informations avant d’ajouter.'
+			)
+		: warnings;
 
 	const result: ImportResult = {
 		ok,
-		status: ok && isComplete(product) ? 'complete' : 'partial',
+		status: complete ? 'complete' : 'partial',
 		product,
 		source,
-		warnings,
+		warnings: visibleWarnings,
 		error: ok ? null : 'Impossible de lire les informations de ce produit.'
 	};
 
@@ -127,11 +167,13 @@ export async function importProduct(input: string): Promise<ImportResult> {
 			readerTitle = reader.title;
 
 			if (!product.image_url) {
-				const images = extractImagesFromMarkdown(reader.content, key);
-				if (images[0]) product.image_url = images[0];
+				const image = pickBestImage(extractImagesFromMarkdown(reader.content, key));
+				if (image) product.image_url = image;
 			}
 
-			if (!product.title && reader.title) product.title = cleanText(reader.title, 300);
+			if (!product.title && reader.title && !isGenericTitle(reader.title, key)) {
+				product.title = cleanText(reader.title, 300);
+			}
 			if (source === 'none') source = 'reader';
 
 			const llm = await extractWithLlm({
@@ -151,6 +193,14 @@ export async function importProduct(input: string): Promise<ImportResult> {
 			}
 		} else if (!product.title) {
 			addWarning(warnings, "La lecture automatique n'a pas pu récupérer cette page.");
+		}
+	}
+
+	if (!product.image_url && product.title && readerProvider() === 'deepseek') {
+		const imagePage = await fetchWithJinaReader(key);
+		if (imagePage) {
+			const image = pickBestImage(extractImagesFromMarkdown(imagePage.content, key));
+			if (image) product.image_url = image;
 		}
 	}
 
@@ -174,6 +224,7 @@ export async function importProduct(input: string): Promise<ImportResult> {
 	}
 
 	product.title = cleanText(product.title, 300);
+	if (isGenericTitle(product.title, key)) product.title = null;
 	product.description = cleanText(product.description, 2000);
 	product.currency = normalizeCurrency(product.currency);
 

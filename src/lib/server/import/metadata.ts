@@ -1,5 +1,5 @@
 import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
+import { JSDOM, VirtualConsole } from 'jsdom';
 
 export type ExtractedPage = {
 	title: string | null;
@@ -139,7 +139,13 @@ function truncate(value: string | null, maxLength: number): string | null {
 }
 
 export function extractMetadata(html: string, pageUrl: string): ExtractedPage {
-	const dom = new JSDOM(html, { url: pageUrl });
+	const virtualConsole = new VirtualConsole();
+	virtualConsole.on('jsdomError', (error) => {
+		if (error.message.includes('Could not parse CSS')) return;
+		console.error(error);
+	});
+
+	const dom = new JSDOM(html, { url: pageUrl, virtualConsole });
 	const document = dom.window.document;
 
 	let jsonLdProduct: JsonObject | null = null;
@@ -261,4 +267,39 @@ export function extractImagesFromMarkdown(markdown: string, pageUrl: string): st
 	}
 
 	return images;
+}
+
+export function pickBestImage(images: string[]): string | null {
+	if (images.length === 0) return null;
+
+	let best: string | null = null;
+	let bestScore = Number.NEGATIVE_INFINITY;
+
+	images.forEach((image, index) => {
+		const lower = image.toLowerCase();
+		let score = 0;
+
+		if (/logo|favicon|sprite|avatar|badge|trustmark|brand-/.test(lower)) score -= 100;
+		if (
+			/theme-thumbnail|interest-thumbnail|thumbnail|thumb|width=170|height=170|width=100|height=100/.test(
+				lower
+			)
+		) {
+			score -= 40;
+		}
+		if (/\.svg(\?|$)/.test(lower)) score -= 100;
+		if (/_prod|product|main|large|zoom|width=800|height=800|width=1500|height=1500/.test(lower)) {
+			score += 30;
+		}
+		if (/\/(set\/assets|products?|media)\//.test(lower)) score += 10;
+
+		score -= index * 0.1;
+
+		if (score > bestScore) {
+			bestScore = score;
+			best = image;
+		}
+	});
+
+	return best;
 }

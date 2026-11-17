@@ -7,6 +7,11 @@ export type ReaderResult = {
 };
 
 function apiKey(): string | undefined {
+	if (env.DEEPSEEK_API_KEY) return env.DEEPSEEK_API_KEY;
+
+	const base = env.LLM_BASE_URL ?? 'https://api.deepseek.com';
+	if (!base.includes('deepseek')) return undefined;
+
 	return env.LLM_API_KEY ?? env.OPENAI_API_KEY ?? env.PRIVATE_OPENAPI_KEY;
 }
 
@@ -52,7 +57,7 @@ async function fetchWithDeepseek(url: string): Promise<ReaderResult | null> {
 
 		return {
 			title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : null,
-			content: content.slice(0, 20_000),
+			content: content.slice(0, 60_000),
 			source: 'deepseek'
 		};
 	} catch {
@@ -60,7 +65,7 @@ async function fetchWithDeepseek(url: string): Promise<ReaderResult | null> {
 	}
 }
 
-async function fetchWithJina(url: string): Promise<ReaderResult | null> {
+export async function fetchWithJinaReader(url: string): Promise<ReaderResult | null> {
 	try {
 		const headers: Record<string, string> = {
 			Accept: 'text/plain',
@@ -82,7 +87,7 @@ async function fetchWithJina(url: string): Promise<ReaderResult | null> {
 
 		return {
 			title,
-			content: content.slice(0, 20_000),
+			content: content.slice(0, 60_000),
 			source: 'jina'
 		};
 	} catch {
@@ -93,6 +98,6 @@ async function fetchWithJina(url: string): Promise<ReaderResult | null> {
 export async function fetchWithReader(url: string): Promise<ReaderResult | null> {
 	const provider = readerProvider();
 	if (provider === 'none') return null;
-	if (provider === 'jina') return fetchWithJina(url);
+	if (provider === 'jina') return fetchWithJinaReader(url);
 	return fetchWithDeepseek(url);
 }
