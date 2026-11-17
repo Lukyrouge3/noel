@@ -179,30 +179,12 @@
 	}
 </script>
 
-<main class="min-h-screen bg-slate-50 p-4 sm:p-6">
+<div class="px-4 py-6 sm:px-6">
 	<div class="mx-auto max-w-5xl">
 		<header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-			<div class="flex items-center gap-3">
-				<a
-					href="/"
-					class="inline-flex items-center gap-2 rounded bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm hover:shadow focus:ring-2 focus:ring-red-400 focus:outline-none"
-					aria-label="Retour à l'accueil"
-				>
-					<svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-						<path
-							d="M10 3L4 10l6 7"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-					Accueil
-				</a>
-				<h1 class="text-xl font-semibold text-slate-900 sm:text-2xl">
-					{userIsOwner ? 'Ma wishlist' : `Wishlist de ${displayName}`}
-				</h1>
-			</div>
+			<h1 class="text-xl font-semibold text-slate-900 sm:text-2xl">
+				{userIsOwner ? 'Ma wishlist' : `Wishlist de ${displayName}`}
+			</h1>
 
 			{#if userIsOwner}
 				<button
@@ -368,7 +350,7 @@
 			{/if}
 		</section>
 	</div>
-</main>
+</div>
 
 {#if showImport}
 	<ImportModal

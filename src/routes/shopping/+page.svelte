@@ -22,28 +22,11 @@
 	}
 </script>
 
-<main class="min-h-screen bg-slate-50 p-6">
+<div class="px-4 py-6 sm:px-6">
 	<div class="mx-auto max-w-5xl">
-		<header class="mb-6 flex items-center justify-between">
-			<div class="mb-4">
-				<a
-					href="/"
-					class="inline-flex items-center gap-2 rounded bg-white/60 px-3 py-1 text-sm text-slate-700 hover:bg-white hover:shadow focus:ring-2 focus:ring-red-400 focus:outline-none"
-					aria-label="Retour à l'accueil"
-				>
-					<svg class="h-4 w-4 text-slate-700" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-						<path
-							d="M10 3L4 10l6 7"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-					Accueil
-				</a>
-			</div>
-			<h1 class="text-2xl font-semibold text-slate-900">Ma liste d'achats</h1>
+		<header class="mb-6">
+			<h1 class="text-xl font-semibold text-slate-900 sm:text-2xl">Ma liste d’achats</h1>
+			<p class="mt-1 text-sm text-slate-500">Les articles que vous avez prévu d’offrir.</p>
 		</header>
 
 		<section class="rounded-lg bg-white p-4 shadow">
@@ -125,4 +108,4 @@
 			{/if}
 		</section>
 	</div>
-</main>
+</div>

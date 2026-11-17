@@ -4,6 +4,7 @@
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import AppHeader from '$lib/components/AppHeader.svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
@@ -11,8 +12,8 @@
 	const session = $derived(data.session);
 
 	onMount(() => {
-		const { data } = supabase.auth.onAuthStateChange((event, _session) => {
-			if (_session?.expires_at !== session?.expires_at) {
+		const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+			if (nextSession?.expires_at !== session?.expires_at) {
 				invalidate('supabase:auth');
 			}
 		});
@@ -22,9 +23,12 @@
 </script>
 
 <svelte:head>
-	<title>Noel</title>
+	<title>Noël</title>
 </svelte:head>
 
-<div class="container">
+<div class="min-h-dvh">
+	{#if session}
+		<AppHeader {session} />
+	{/if}
 	{@render children()}
 </div>

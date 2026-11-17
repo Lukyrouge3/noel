@@ -31,11 +31,13 @@
 </script>
 
 {#if session}
-	<main class="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-		<div class="w-full max-w-3xl rounded-2xl bg-white p-8 text-center shadow-md">
+	<div class="px-4 py-8 sm:px-6">
+		<div class="mx-auto w-full max-w-3xl rounded-2xl bg-white p-6 text-center shadow-md sm:p-8">
 			<h1 class="mb-4 text-3xl font-semibold text-slate-900">Bienvenue sur Noël ! 🎄</h1>
 			<p class="mb-6 text-lg text-slate-600">
-				Vous êtes connecté en tant que <strong>{session.user.email}</strong>.
+				Vous êtes connecté en tant que <strong
+					>{session.user.user_metadata?.username ?? session.user.email?.split('@')[0]}</strong
+				>.
 			</p>
 			{#if problems.length > 0}
 				<div class="mb-6 rounded-md bg-yellow-50 p-4 text-yellow-700">
@@ -146,10 +148,10 @@
 				{/await}
 			</section>
 		</div>
-	</main>
+	</div>
 {:else}
-	<main class="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-		<div class="w-full max-w-3xl rounded-2xl bg-white p-8 text-center shadow-md">
+	<main class="flex min-h-[70dvh] items-center justify-center px-4 py-8">
+		<div class="mx-auto w-full max-w-3xl rounded-2xl bg-white p-6 text-center shadow-md sm:p-8">
 			<h1 class="mb-4 text-3xl font-semibold text-slate-900">Bienvenue sur Noël ! 🎄</h1>
 			<p class="mb-6 text-lg text-slate-600">
 				Pour accéder à l'application, veuillez vous connecter.
