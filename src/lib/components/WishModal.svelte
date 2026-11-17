@@ -10,11 +10,13 @@
 
 	let {
 		wish = null,
+		initial = null,
 		onClose,
 		onSaved,
 		onSave
 	}: {
 		wish?: Wish | null;
+		initial?: Partial<WishPayload> | null;
 		onClose: () => void;
 		onSaved: (wish: Wish) => void;
 		onSave: (payload: WishPayload, wishId?: number) => Promise<WishSaveResult>;
@@ -22,13 +24,19 @@
 
 	const isEdit = wish !== null;
 
-	let title = $state(wish?.title ?? '');
-	let price = $state(wish ? String(wish.price) : '');
-	let currency = $state(wish?.currency ?? 'EUR');
-	let quantity = $state(wish?.quantity ?? 1);
-	let url = $state(wish?.url ?? '');
-	let imageUrl = $state(wish?.image_url ?? '');
-	let description = $state(wish?.description ?? '');
+	let title = $state(wish?.title ?? initial?.title ?? '');
+	let price = $state(
+		wish
+			? String(wish.price)
+			: initial?.price !== undefined && initial?.price !== null
+				? String(initial.price)
+				: ''
+	);
+	let currency = $state(wish?.currency ?? initial?.currency ?? 'EUR');
+	let quantity = $state(wish?.quantity ?? initial?.quantity ?? 1);
+	let url = $state(wish?.url ?? initial?.url ?? '');
+	let imageUrl = $state(wish?.image_url ?? initial?.image_url ?? '');
+	let description = $state(wish?.description ?? initial?.description ?? '');
 	let error = $state('');
 	let pending = $state(false);
 

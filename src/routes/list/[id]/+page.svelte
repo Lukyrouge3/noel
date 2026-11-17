@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import ImportModal from '$lib/components/ImportModal.svelte';
 	import WishModal from '$lib/components/WishModal.svelte';
+	import type { ImportResult } from '$lib/import';
 	import type { Tables } from '$lib/supabase';
 	import type { WishPayload, WishSaveResult } from '$lib/wishes';
 	import type { PageData } from './$types';
@@ -19,20 +21,32 @@
 
 	const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/374151?text=Article';
 
+	let showImport = $state(false);
 	let showModal = $state(false);
+	let draft = $state<Partial<WishPayload> | null>(null);
 	let editingWish = $state<Tables<'wishes'> | null>(null);
 	let notice = $state<string | null>(null);
 	let pendingWishId = $state<number | null>(null);
 
 	const displayName = $derived(profile?.display_name ?? 'Utilisateur');
 
-	function openCreate() {
+	function openImport() {
 		editingWish = null;
+		draft = null;
 		notice = null;
+		showImport = true;
+	}
+
+	function openManual() {
+		showImport = false;
+		editingWish = null;
+		draft = null;
 		showModal = true;
 	}
 
 	function openEdit(wish: WishWithIntentions) {
+		showImport = false;
+		draft = null;
 		editingWish = wish;
 		notice = null;
 		showModal = true;
@@ -41,6 +55,23 @@
 	function closeModal() {
 		showModal = false;
 		editingWish = null;
+		draft = null;
+	}
+
+	function handleImported(result: ImportResult) {
+		const product = result.product;
+		draft = {
+			title: product.title ?? '',
+			price: product.price ?? undefined,
+			currency: product.currency ?? 'EUR',
+			quantity: 1,
+			url: product.url,
+			image_url: product.image_url ?? '',
+			description: product.description ?? ''
+		};
+		showImport = false;
+		showModal = true;
+		if (result.warnings.length > 0) notice = result.warnings.join(' ');
 	}
 
 	async function handleSaved() {
@@ -176,7 +207,7 @@
 			{#if userIsOwner}
 				<button
 					type="button"
-					onclick={openCreate}
+					onclick={openImport}
 					class="inline-flex items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2.5 text-white shadow hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:outline-none"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -217,7 +248,7 @@
 					{#if userIsOwner}
 						<button
 							type="button"
-							onclick={openCreate}
+							onclick={openImport}
 							class="mt-4 rounded-md bg-red-600 px-4 py-2.5 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:outline-none"
 						>
 							Ajouter un premier article
@@ -339,6 +370,20 @@
 	</div>
 </main>
 
+{#if showImport}
+	<ImportModal
+		onClose={() => (showImport = false)}
+		onImported={handleImported}
+		onManual={openManual}
+	/>
+{/if}
+
 {#if showModal && session}
-	<WishModal wish={editingWish} onClose={closeModal} onSaved={handleSaved} onSave={saveWish} />
+	<WishModal
+		wish={editingWish}
+		initial={draft}
+		onClose={closeModal}
+		onSaved={handleSaved}
+		onSave={saveWish}
+	/>
 {/if}
