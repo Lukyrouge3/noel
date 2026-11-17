@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { Tables } from '$lib/supabase.js';
+	import type { PageData } from './$types';
 
-	const { data } = $props();
-	const { supabase, buy_intentions } = data;
+	let { data }: { data: PageData } = $props();
+	const supabase = $derived(data.supabase);
+	const buy_intentions = $derived(data.buy_intentions ?? []);
 
 	async function buyIntentToggle(buy_intention: Tables<'buy_intentions'>) {
 		const { error } = await supabase
@@ -66,7 +68,7 @@
 							{#each buy_intentions as bi (bi.id)}
 								<tr class="hover:bg-slate-50">
 									<td class="px-4 py-3 capitalize"
-										>{bi.wish.profile.username ?? bi.wish.profile.email.split('@')[0]}</td
+										>{bi.wish.profile.display_name ?? 'Utilisateur'}</td
 									>
 									<td class="px-4 py-3">
 										<div class="flex items-center gap-3">

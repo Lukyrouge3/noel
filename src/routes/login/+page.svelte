@@ -1,8 +1,8 @@
 <script lang="ts">
-	// UI only - no logic
+	import type { PageData } from './$types';
 
-	const { data } = $props();
-	const { supabase } = $derived(data);
+	let { data }: { data: PageData } = $props();
+	const supabase = $derived(data.supabase);
 
 	let password = $state('');
 	let email = $state('');

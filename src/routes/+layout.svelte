@@ -3,9 +3,12 @@
 	import '../app.css';
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import type { Snippet } from 'svelte';
+	import type { LayoutData } from './$types';
 
-	let { data, children } = $props();
-	let { supabase, session } = $derived(data);
+	let { data, children }: { data: LayoutData; children: Snippet } = $props();
+	const supabase = $derived(data.supabase);
+	const session = $derived(data.session);
 
 	onMount(() => {
 		const { data } = supabase.auth.onAuthStateChange((event, _session) => {

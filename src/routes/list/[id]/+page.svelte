@@ -1,10 +1,13 @@
 <script lang="ts">
 	import type { Tables } from '$lib/supabase.js';
+	import type { PageData } from './$types';
 
-	const { data, params } = $props();
-	const { supabase, session, wishes, profile } = data;
-
-	const userIsOwner = session && session.user.id === params.id;
+	let { data, params }: { data: PageData; params: { id: string } } = $props();
+	const supabase = $derived(data.supabase);
+	const session = $derived(data.session);
+	const wishes = $derived(data.wishes ?? []);
+	const profile = $derived(data.profile);
+	const userIsOwner = $derived(!!session && session.user.id === params.id);
 
 	// Modal state and form fields (UI only)
 	let showModal = $state(false);
@@ -16,6 +19,12 @@
 	let description = $state('');
 
 	let loading_url = $state(false);
+
+	$effect(() => {
+		if (params.id) {
+			showModal = false;
+		}
+	});
 
 	async function fetchFromUrl() {
 		loading_url = true;
@@ -143,9 +152,7 @@
 				</a>
 			</div>
 			<h1 class="text-2xl font-semibold text-slate-900">
-				{userIsOwner
-					? 'Ma wishlist'
-					: `Wishlist de ${profile?.username || profile?.email.split('@')[0]}`}
+				{userIsOwner ? 'Ma wishlist' : `Wishlist de ${profile?.display_name ?? 'Utilisateur'}`}
 			</h1>
 			{#if userIsOwner}
 				<div class="flex items-center gap-3">

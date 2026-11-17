@@ -1,10 +1,19 @@
 <script lang="ts">
-	const { data } = $props();
+	import { invalidateAll } from '$app/navigation';
+	import type { PageData } from './$types';
 
-	const { session, supabase, problems } = $derived(data);
+	let { data }: { data: PageData } = $props();
+
+	const session = $derived(data.session);
+	const supabase = $derived(data.supabase);
+	const problems = $derived(data.problems ?? []);
 
 	const wish_lists = $derived(
-		supabase.from('profiles').select('*, wishes(id)').eq('wishes.deleted', false)
+		supabase
+			.from('public_profiles')
+			.select('id, display_name, wishes(id)')
+			.eq('wishes.deleted', false)
+			.neq('id', session?.user.id ?? '')
 	);
 
 	async function removeIntention(wish_id: number) {
@@ -17,8 +26,7 @@
 			alert("Erreur lors de la suppression de l'intention d'achat : " + error.message);
 			return;
 		}
-		// Refresh the page to update the problems list
-		window.location.reload();
+		await invalidateAll();
 	}
 </script>
 
@@ -37,7 +45,7 @@
 						{#each problems as problem (problem.id)}
 							<li>
 								L'item "<strong>{problem.title}</strong>" dans la wishlist de
-								<strong>{problem.profiles?.email}</strong>
+								<strong>{problem.profile?.display_name}</strong>
 								n'existe plus.
 								<button
 									class="text-red-600 hover:text-red-500"
@@ -61,13 +69,14 @@
 				>
 					Mes achats
 				</a>
-				<a
-					class="inline-block rounded-md border border-red-600 bg-white px-6 py-3 text-red-600 transition hover:bg-red-50 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
-					href="/logout"
-					data-sveltekit-preload-data="false"
-				>
-					Se déconnecter
-				</a>
+				<form method="POST" action="/logout">
+					<button
+						type="submit"
+						class="inline-block rounded-md border border-red-600 bg-white px-6 py-3 text-red-600 transition hover:bg-red-50 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
+					>
+						Se déconnecter
+					</button>
+				</form>
 			</div>
 
 			<section class="mt-8 w-full">
@@ -105,10 +114,8 @@
 						<div class="p-6 text-center text-slate-500">Aucune wishlist trouvée.</div>
 					{:else}
 						<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-							{#each result.data.filter((p) => p.id != session.user.id) as profile (profile.id)}
-								{@const username = profile.username
-									? profile.username
-									: profile.email.split('@')[0]}
+							{#each result.data as profile (profile.id)}
+								{@const username = profile.display_name ?? 'Utilisateur'}
 								<article class="rounded-lg bg-white p-4 shadow-sm transition hover:shadow-md">
 									<div class="flex items-center justify-between">
 										<div class="flex items-center gap-3">
@@ -120,9 +127,9 @@
 											<div class="text-left">
 												<p class="text-sm font-medium text-slate-900 capitalize">{username}</p>
 												<p class="text-xs text-slate-500">
-													Nombres d'items: <span class="truncate font-mono text-xs text-slate-400"
-														>{profile.wishes.length}</span
-													>
+													{profile.wishes?.length ?? 0} article{(profile.wishes?.length ?? 0) > 1
+														? 's'
+														: ''}
 												</p>
 											</div>
 										</div>
