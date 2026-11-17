@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import ImportModal from '$lib/components/ImportModal.svelte';
+	import ReservationToggle from '$lib/components/ReservationToggle.svelte';
 	import WishModal from '$lib/components/WishModal.svelte';
 	import type { ImportResult } from '$lib/import';
 	import type { Tables } from '$lib/supabase';
@@ -182,15 +184,22 @@
 <div class="px-4 py-6 sm:px-6">
 	<div class="mx-auto max-w-5xl">
 		<header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-			<h1 class="text-xl font-semibold text-slate-900 sm:text-2xl">
-				{userIsOwner ? 'Ma wishlist' : `Wishlist de ${displayName}`}
-			</h1>
+			<div>
+				<h1 class="text-xl font-semibold text-slate-900 sm:text-2xl">
+					{userIsOwner ? 'Ma wishlist' : `Wishlist de ${displayName}`}
+				</h1>
+				<p class="mt-1 text-sm text-slate-500">
+					{userIsOwner
+						? `${wishes.length} article${wishes.length > 1 ? 's' : ''} dans votre liste.`
+						: `${wishes.length} article${wishes.length > 1 ? 's' : ''} à découvrir.`}
+				</p>
+			</div>
 
 			{#if userIsOwner}
 				<button
 					type="button"
 					onclick={openImport}
-					class="inline-flex items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2.5 text-white shadow hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:outline-none"
+					class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 font-medium text-white shadow-sm transition hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
@@ -206,7 +215,7 @@
 
 		{#if notice}
 			<div
-				class="mb-4 flex items-start justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+				class="mb-4 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
 				role="status"
 			>
 				<span>{notice}</span>
@@ -221,134 +230,201 @@
 			</div>
 		{/if}
 
-		<section class="rounded-xl bg-white p-2 shadow-sm sm:p-4">
-			{#if wishes.length === 0}
-				<div class="px-6 py-12 text-center">
-					<p class="text-lg font-medium text-slate-700">
-						{userIsOwner ? 'Votre wishlist est vide.' : 'Cette wishlist est vide.'}
-					</p>
+		{#if wishes.length === 0}
+			<EmptyState
+				title={userIsOwner ? 'Votre wishlist est vide' : 'Cette wishlist est vide'}
+				description={userIsOwner
+					? 'Collez le lien d’un produit pour l’ajouter en quelques secondes.'
+					: 'Revenez plus tard pour découvrir les idées de cadeaux.'}
+			>
+				{#snippet action()}
 					{#if userIsOwner}
 						<button
 							type="button"
 							onclick={openImport}
-							class="mt-4 rounded-md bg-red-600 px-4 py-2.5 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:outline-none"
+							class="rounded-xl bg-red-600 px-4 py-2.5 font-medium text-white shadow-sm transition hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:outline-none"
 						>
 							Ajouter un premier article
 						</button>
 					{/if}
-				</div>
-			{:else}
-				<div class="overflow-x-auto">
-					<table class="min-w-full text-sm">
-						<caption class="sr-only">
-							{userIsOwner ? 'Ma wishlist' : `Wishlist de ${displayName}`}
-						</caption>
-						<thead class="bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
-							<tr>
-								<th scope="col" class="px-4 py-3 font-medium">Article</th>
-								<th scope="col" class="w-28 px-4 py-3 font-medium">Prix</th>
-								<th scope="col" class="w-36 px-4 py-3 font-medium">Lien</th>
-								<th scope="col" class="w-20 px-4 py-3 font-medium">Qté</th>
-								<th scope="col" class="w-36 px-4 py-3 font-medium">Ajouté le</th>
-								<th scope="col" class="w-48 px-4 py-3 text-right font-medium">Actions</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-slate-100">
-							{#each wishes as wish (wish.id)}
-								{@const mine = wish.buy_intentions.some(
-									(intent) => intent.user_id === session?.user.id
-								)}
-								{@const reservedByOther = wish.buy_intentions.length > 0 && !mine}
-								<tr class="align-middle hover:bg-slate-50">
-									<td class="px-4 py-3">
-										<div class="flex items-center gap-3">
-											<img
-												src={wish.image_url || PLACEHOLDER}
-												alt=""
-												loading="lazy"
-												class="h-12 w-12 flex-none rounded-lg border border-slate-100 object-cover"
-												onerror={(event) => {
-													const image = event.currentTarget as HTMLImageElement;
-													if (image.src !== PLACEHOLDER) image.src = PLACEHOLDER;
-												}}
-											/>
-											<div class="min-w-0">
-												<div class="font-medium break-words text-slate-900">{wish.title}</div>
-												{#if wish.description}
-													<div class="text-xs break-words text-slate-500">{wish.description}</div>
-												{/if}
-											</div>
-										</div>
-									</td>
-									<td class="px-4 py-3 font-medium whitespace-nowrap text-slate-900">
-										{formatPrice(wish)}
-									</td>
-									<td class="px-4 py-3">
-										{#if wish.url}
-											<a
-												href={wish.url}
-												target="_blank"
-												rel="noopener noreferrer"
-												class="text-red-600 hover:underline">Voir le produit</a
-											>
-										{:else}
-											<span class="text-slate-400">Pas de lien</span>
-										{/if}
-									</td>
-									<td class="px-4 py-3 text-slate-700">{wish.quantity}</td>
-									<td class="px-4 py-3 whitespace-nowrap text-slate-500">
-										{formatDate(wish.created_at)}
-									</td>
-									<td class="px-4 py-3">
-										<div class="flex items-center justify-end gap-2">
-											{#if userIsOwner}
-												<button
-													type="button"
-													class="rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200 focus:ring-2 focus:ring-slate-400 focus:outline-none"
-													disabled={pendingWishId === wish.id}
-													onclick={() => openEdit(wish)}
-												>
-													Modifier
-												</button>
-												<button
-													type="button"
-													class="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:outline-none disabled:opacity-60"
-													disabled={pendingWishId === wish.id}
-													onclick={() => deleteWish(wish.id)}
-												>
-													Supprimer
-												</button>
-											{:else}
-												<label
-													class="inline-flex cursor-pointer items-center gap-2 text-sm select-none"
-												>
-													<input
-														type="checkbox"
-														class="peer sr-only"
-														disabled={reservedByOther || pendingWishId === wish.id}
-														checked={mine}
-														onchange={() => buyIntentToggle(wish)}
-													/>
-													<span
-														class="h-4 w-4 flex-none rounded border border-slate-300 bg-white transition-colors peer-checked:border-green-600 peer-checked:bg-green-600 peer-disabled:cursor-not-allowed peer-disabled:border-slate-200 peer-disabled:bg-slate-100 peer-disabled:opacity-60"
-														aria-hidden="true"
-													></span>
-													<span class="text-sm text-slate-700 peer-disabled:text-slate-400">
-														{reservedByOther
-															? "Réservé par quelqu'un d'autre"
-															: "Je vais l'acheter"}
-													</span>
-												</label>
+				{/snippet}
+			</EmptyState>
+		{:else}
+			<!-- Mobile cards -->
+			<div class="space-y-3 md:hidden">
+				{#each wishes as wish (wish.id)}
+					{@const mine = wish.buy_intentions.some((intent) => intent.user_id === session?.user.id)}
+					{@const reservedByOther = wish.buy_intentions.length > 0 && !mine}
+					<article class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+						<div class="flex gap-3">
+							<img
+								src={wish.image_url || PLACEHOLDER}
+								alt=""
+								loading="lazy"
+								class="h-16 w-16 flex-none rounded-xl border border-slate-100 object-cover"
+								onerror={(event) => {
+									const image = event.currentTarget as HTMLImageElement;
+									if (image.src !== PLACEHOLDER) image.src = PLACEHOLDER;
+								}}
+							/>
+							<div class="min-w-0 flex-1">
+								<h2 class="font-medium break-words text-slate-900">{wish.title}</h2>
+								{#if wish.description}
+									<p class="mt-0.5 line-clamp-2 text-sm break-words text-slate-500">
+										{wish.description}
+									</p>
+								{/if}
+								<div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+									<span class="font-semibold text-slate-900">{formatPrice(wish)}</span>
+									<span class="text-slate-500">Qté {wish.quantity}</span>
+									{#if wish.url}
+										<a
+											href={wish.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="font-medium text-red-600 hover:underline">Voir</a
+										>
+									{/if}
+								</div>
+							</div>
+						</div>
+
+						<div
+							class="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3"
+						>
+							{#if userIsOwner}
+								<div class="flex gap-2">
+									<button
+										type="button"
+										class="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200 focus:ring-2 focus:ring-slate-400 focus:outline-none disabled:opacity-60"
+										disabled={pendingWishId === wish.id}
+										onclick={() => openEdit(wish)}
+									>
+										Modifier
+									</button>
+									<button
+										type="button"
+										class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:outline-none disabled:opacity-60"
+										disabled={pendingWishId === wish.id}
+										onclick={() => deleteWish(wish.id)}
+									>
+										Supprimer
+									</button>
+								</div>
+							{:else}
+								<ReservationToggle
+									{mine}
+									{reservedByOther}
+									pending={pendingWishId === wish.id}
+									onToggle={() => buyIntentToggle(wish)}
+								/>
+							{/if}
+						</div>
+					</article>
+				{/each}
+			</div>
+
+			<!-- Desktop table -->
+			<div
+				class="hidden overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm md:block"
+			>
+				<table class="min-w-full text-sm">
+					<caption class="sr-only">
+						{userIsOwner ? 'Ma wishlist' : `Wishlist de ${displayName}`}
+					</caption>
+					<thead class="bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
+						<tr>
+							<th scope="col" class="px-5 py-3 font-medium">Article</th>
+							<th scope="col" class="w-28 px-4 py-3 font-medium">Prix</th>
+							<th scope="col" class="w-32 px-4 py-3 font-medium">Lien</th>
+							<th scope="col" class="w-16 px-4 py-3 font-medium">Qté</th>
+							<th scope="col" class="w-32 px-4 py-3 font-medium">Ajouté le</th>
+							<th scope="col" class="w-48 px-5 py-3 text-right font-medium">Actions</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-slate-100">
+						{#each wishes as wish (wish.id)}
+							{@const mine = wish.buy_intentions.some(
+								(intent) => intent.user_id === session?.user.id
+							)}
+							{@const reservedByOther = wish.buy_intentions.length > 0 && !mine}
+							<tr class="align-middle hover:bg-slate-50/70">
+								<td class="px-5 py-3">
+									<div class="flex items-center gap-3">
+										<img
+											src={wish.image_url || PLACEHOLDER}
+											alt=""
+											loading="lazy"
+											class="h-12 w-12 flex-none rounded-xl border border-slate-100 object-cover"
+											onerror={(event) => {
+												const image = event.currentTarget as HTMLImageElement;
+												if (image.src !== PLACEHOLDER) image.src = PLACEHOLDER;
+											}}
+										/>
+										<div class="min-w-0">
+											<div class="font-medium break-words text-slate-900">{wish.title}</div>
+											{#if wish.description}
+												<div class="line-clamp-1 text-xs break-words text-slate-500">
+													{wish.description}
+												</div>
 											{/if}
 										</div>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			{/if}
-		</section>
+									</div>
+								</td>
+								<td class="px-4 py-3 font-semibold whitespace-nowrap text-slate-900">
+									{formatPrice(wish)}
+								</td>
+								<td class="px-4 py-3">
+									{#if wish.url}
+										<a
+											href={wish.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="font-medium text-red-600 hover:underline">Voir le produit</a
+										>
+									{:else}
+										<span class="text-slate-400">Pas de lien</span>
+									{/if}
+								</td>
+								<td class="px-4 py-3 text-slate-700">{wish.quantity}</td>
+								<td class="px-4 py-3 whitespace-nowrap text-slate-500">
+									{formatDate(wish.created_at)}
+								</td>
+								<td class="px-5 py-3">
+									<div class="flex items-center justify-end gap-2">
+										{#if userIsOwner}
+											<button
+												type="button"
+												class="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200 focus:ring-2 focus:ring-slate-400 focus:outline-none disabled:opacity-60"
+												disabled={pendingWishId === wish.id}
+												onclick={() => openEdit(wish)}
+											>
+												Modifier
+											</button>
+											<button
+												type="button"
+												class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:outline-none disabled:opacity-60"
+												disabled={pendingWishId === wish.id}
+												onclick={() => deleteWish(wish.id)}
+											>
+												Supprimer
+											</button>
+										{:else}
+											<ReservationToggle
+												{mine}
+												{reservedByOther}
+												pending={pendingWishId === wish.id}
+												onToggle={() => buyIntentToggle(wish)}
+											/>
+										{/if}
+									</div>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{/if}
 	</div>
 </div>
 
