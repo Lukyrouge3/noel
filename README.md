@@ -1,38 +1,61 @@
-# sv
+# Noël 🎄
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A small family wishlist app built with SvelteKit, Supabase and Tailwind CSS.
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
+## Local development
 
 ```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+pnpm install
+cp .env.example .env      # fill in the values
+pnpm db:start
+pnpm db:reset             # applies migrations + seed.sql
+pnpm dev
 ```
 
-## Developing
+Supabase Studio: <http://127.0.0.1:53323>
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### Seeded accounts
 
-```sh
-npm run dev
+`supabase/seed.sql` creates deterministic local data. Password for every account: `password123`.
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+| Email                | Username |
+| -------------------- | -------- |
+| `alice@example.test` | alice    |
+| `bob@example.test`   | bob      |
+| `carol@example.test` | carol    |
+
+The seed includes normal wishes, reserved wishes, a bought item, and a deleted wish that still
+has a buy intention (used by the “Problèmes détectés” panel).
+
+> The seed is for local development only. Never run it against a production database.
+
+## Useful scripts
+
+| Command                          | Description                                        |
+| -------------------------------- | -------------------------------------------------- |
+| `pnpm dev`                       | Start the dev server                               |
+| `pnpm check`                     | Svelte/TypeScript diagnostics                      |
+| `pnpm lint`                      | Prettier + ESLint                                  |
+| `pnpm build`                     | Production build                                   |
+| `pnpm db:start` / `pnpm db:stop` | Start/stop local Supabase                          |
+| `pnpm db:reset`                  | Reset the local database and run the seed          |
+| `pnpm db:status`                 | Show local Supabase URLs and keys                  |
+| `pnpm types:generate`            | Regenerate `src/lib/supabase.ts` from the local DB |
+
+## Environment
+
+```env
+PUBLIC_SUPABASE_URL=
+PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+
+LLM_BASE_URL=https://api.deepseek.com
+LLM_API_KEY=
+LLM_MODEL=deepseek-flash
+LLM_JSON_MODE=true
+LLM_TIMEOUT_MS=30000
+
+READER_PROVIDER=deepseek
 ```
 
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+The importer works with any OpenAI-compatible chat-completions provider. If `LLM_API_KEY` is
+missing, URL imports fall back to metadata-only mode instead of failing.
