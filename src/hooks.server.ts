@@ -1,7 +1,7 @@
 // src/hooks.server.ts
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY } from '$env/static/public'
-import { createServerClient } from '@supabase/ssr'
-import type { Handle } from '@sveltejs/kit'
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY } from '$env/static/public';
+import { createServerClient } from '@supabase/ssr';
+import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
@@ -15,11 +15,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 			 */
 			setAll: (cookiesToSet) => {
 				cookiesToSet.forEach(({ name, value, options }) => {
-					event.cookies.set(name, value, { ...options, path: '/' })
-				})
-			},
-		},
-	})
+					event.cookies.set(name, value, { ...options, path: '/' });
+				});
+			}
+		}
+	});
 
 	/**
 	 * Unlike `supabase.auth.getSession`, which is unsafe on the server because it
@@ -29,21 +29,21 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.safeGetSession = async () => {
 		const {
 			data: { user },
-			error,
-		} = await event.locals.supabase.auth.getUser()
+			error
+		} = await event.locals.supabase.auth.getUser();
 		if (error) {
-			return { session: null, user: null }
+			return { session: null, user: null };
 		}
 
 		const {
-			data: { session },
-		} = await event.locals.supabase.auth.getSession()
-		return { session, user }
-	}
+			data: { session }
+		} = await event.locals.supabase.auth.getSession();
+		return { session, user };
+	};
 
 	return resolve(event, {
 		filterSerializedResponseHeaders(name: string) {
-			return name === 'content-range' || name === 'x-supabase-api-version'
-		},
-	})
-}
+			return name === 'content-range' || name === 'x-supabase-api-version';
+		}
+	});
+};

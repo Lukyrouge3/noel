@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { redirect } from '@sveltejs/kit';
-
 	// UI only - no logic
 
 	const { data } = $props();
@@ -21,34 +19,61 @@
 			window.location.href = '/';
 		}
 	}
-
 </script>
 
-<main class="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-	<div class="max-w-md w-full bg-white rounded-2xl shadow-md p-8">
-		<div class="flex items-center justify-center mb-4">
-			<div class="relative h-12 w-12 rounded-lg bg-gradient-to-br from-red-600 via-red-500 to-red-400 flex items-center justify-center text-white font-bold">Noël
-				<span class="absolute -top-2 -right-2 h-3 w-3 rounded-full bg-white border-2 border-red-600" aria-hidden="true"></span>
+<main class="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+	<div class="w-full max-w-md rounded-2xl bg-white p-8 shadow-md">
+		<div class="mb-4 flex items-center justify-center">
+			<div
+				class="relative flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-red-600 via-red-500 to-red-400 font-bold text-white"
+			>
+				Noël
+				<span
+					class="absolute -top-2 -right-2 h-3 w-3 rounded-full border-2 border-red-600 bg-white"
+					aria-hidden="true"
+				></span>
 			</div>
 		</div>
 
-		<h1 class="text-2xl font-semibold text-slate-900 text-center">Se connecter</h1>
-		<p class="text-sm text-slate-500 text-center mt-1 mb-6">Connectez‑vous avec votre adresse e‑mail</p>
+		<h1 class="text-center text-2xl font-semibold text-slate-900">Se connecter</h1>
+		<p class="mt-1 mb-6 text-center text-sm text-slate-500">
+			Connectez‑vous avec votre adresse e‑mail
+		</p>
 
-		<form action="/login" method="post" class="space-y-4" aria-label="Formulaire de connexion" onsubmit={onSubmit}>
+		<form
+			action="/login"
+			method="post"
+			class="space-y-4"
+			aria-label="Formulaire de connexion"
+			onsubmit={onSubmit}
+		>
 			<div>
 				<label for="email" class="block text-sm font-medium text-slate-700">Adresse e‑mail</label>
 				<div class="mt-1">
-					<input id="email" bind:value={email} name="email" type="email" required placeholder="vous@exemple.com"
-						class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent" />
+					<input
+						id="email"
+						bind:value={email}
+						name="email"
+						type="email"
+						required
+						placeholder="vous@exemple.com"
+						class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 placeholder-slate-400 shadow-sm focus:border-transparent focus:ring-2 focus:ring-red-400 focus:outline-none"
+					/>
 				</div>
 			</div>
 
 			<div>
 				<label for="password" class="block text-sm font-medium text-slate-700">Mot de passe</label>
 				<div class="mt-1">
-					<input id="password" bind:value={password} name="password" type="password" required placeholder="••••••••"
-						class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent" />
+					<input
+						id="password"
+						bind:value={password}
+						name="password"
+						type="password"
+						required
+						placeholder="••••••••"
+						class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 placeholder-slate-400 shadow-sm focus:border-transparent focus:ring-2 focus:ring-red-400 focus:outline-none"
+					/>
 				</div>
 			</div>
 
@@ -58,15 +83,21 @@
 					Se souvenir de moi
 				</label> -->
 
-				<a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="text-sm text-red-600 hover:underline">Mot de passe oublié ?</a>
+				<a
+					href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+					class="text-sm text-red-600 hover:underline">Mot de passe oublié ?</a
+				>
 			</div>
 
 			<div>
-				<button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold px-4 py-2 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400">Se connecter</button>
+				<button
+					type="submit"
+					class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2 font-semibold text-white shadow-md hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none active:bg-red-800"
+					>Se connecter</button
+				>
 			</div>
 		</form>
 
 		<!-- <p class="mt-6 text-center text-sm text-slate-600">Pas de compte ? <a href="/signup" class="text-red-600 hover:underline">Inscription</a></p> -->
 	</div>
 </main>
-

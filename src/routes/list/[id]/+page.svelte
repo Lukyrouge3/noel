@@ -42,7 +42,10 @@
 			price = parseFloat(result.price);
 			image_url = result.images && result.images.length > 0 ? result.images[0] : '';
 		} catch (err) {
-			alert("Erreur lors de la récupération des données depuis l'URL : " + err.message);
+			alert(
+				"Erreur lors de la récupération des données depuis l'URL : " +
+					(err instanceof Error ? err.message : String(err))
+			);
 		} finally {
 			loading_url = false;
 		}
@@ -111,6 +114,7 @@
 				id: -1,
 				user_id: session!.user.id,
 				wish_id: wish.id,
+				bought: false,
 				created_at: new Date().toISOString()
 			});
 		}
@@ -183,7 +187,7 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y">
-							{#each wishes as wish}
+							{#each wishes as wish (wish.id)}
 								<tr class="hover:bg-slate-50">
 									<td class="px-4 py-3">
 										<div class="flex items-center gap-3">

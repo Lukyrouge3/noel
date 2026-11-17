@@ -34,7 +34,7 @@
 					<h2 class="mb-2 text-lg font-medium">Problèmes détectés !</h2>
 					<p>Certains articles que vous avez prévu d'acheter ne sont plus dans la wishlist.</p>
 					<ul class="list-inside list-disc text-left">
-						{#each problems as problem}
+						{#each problems as problem (problem.id)}
 							<li>
 								L'item "<strong>{problem.title}</strong>" dans la wishlist de
 								<strong>{problem.profiles?.email}</strong>
@@ -105,7 +105,7 @@
 						<div class="p-6 text-center text-slate-500">Aucune wishlist trouvée.</div>
 					{:else}
 						<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-							{#each result.data.filter((p) => p.id != session.user.id) as profile}
+							{#each result.data.filter((p) => p.id != session.user.id) as profile (profile.id)}
 								{@const username = profile.username
 									? profile.username
 									: profile.email.split('@')[0]}
