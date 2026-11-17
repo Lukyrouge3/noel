@@ -1,31 +1,12 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { importProduct } from '$lib/server/import';
+import { isRateLimited } from '$lib/server/import/rate-limit';
 import { importUrlSchema } from '$lib/server/import/schema';
 
 export const config = {
 	bodySizeLimit: '16kb'
 };
-
-const WINDOW_MS = 60 * 60 * 1000;
-const MAX_IMPORTS_PER_WINDOW = 20;
-
-const buckets = new Map<string, { count: number; resetAt: number }>();
-
-function rateLimited(userId: string): boolean {
-	const now = Date.now();
-	const bucket = buckets.get(userId);
-
-	if (!bucket || bucket.resetAt <= now) {
-		buckets.set(userId, { count: 1, resetAt: now + WINDOW_MS });
-		return false;
-	}
-
-	if (bucket.count >= MAX_IMPORTS_PER_WINDOW) return true;
-
-	bucket.count += 1;
-	return false;
-}
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session } = await locals.safeGetSession();
@@ -34,7 +15,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ ok: false, error: 'Connectez-vous pour importer un article.' }, { status: 401 });
 	}
 
-	if (rateLimited(session.user.id)) {
+	if (isRateLimited('url:' + session.user.id)) {
 		return json(
 			{ ok: false, error: 'Trop d’imports en peu de temps. Réessayez dans une heure.' },
 			{ status: 429 }

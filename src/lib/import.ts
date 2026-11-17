@@ -8,7 +8,7 @@ export type ProductImport = {
 };
 
 export type ImportStatus = 'complete' | 'partial';
-export type ImportSource = 'direct' | 'reader' | 'llm' | 'none';
+export type ImportSource = 'direct' | 'reader' | 'llm' | 'vision' | 'none';
 
 export type ImportResult = {
 	ok: boolean;

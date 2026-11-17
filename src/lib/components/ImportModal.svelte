@@ -14,10 +14,12 @@
 
 	let url = $state('');
 	let loading = $state(false);
+	let loadingImage = $state(false);
 	let error = $state('');
 	let warnings = $state<string[]>([]);
 	let dialog: HTMLDivElement;
 	let input: HTMLInputElement;
+	let fileInput: HTMLInputElement;
 
 	onMount(() => {
 		const previous = document.activeElement as HTMLElement | null;
@@ -76,6 +78,73 @@
 		} catch {
 			error = 'Impossible de lire le presse-papiers. Collez le lien manuellement.';
 			input?.focus();
+		}
+	}
+
+	async function resizeImage(file: File): Promise<Blob> {
+		const objectUrl = URL.createObjectURL(file);
+		try {
+			const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+				const element = new Image();
+				element.onload = () => resolve(element);
+				element.onerror = () => reject(new Error('invalid image'));
+				element.src = objectUrl;
+			});
+
+			const maxSize = 1600;
+			const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+			const canvas = document.createElement('canvas');
+			canvas.width = Math.max(1, Math.round(image.width * scale));
+			canvas.height = Math.max(1, Math.round(image.height * scale));
+
+			const context = canvas.getContext('2d');
+			if (!context) throw new Error('canvas unavailable');
+
+			context.fillStyle = '#ffffff';
+			context.fillRect(0, 0, canvas.width, canvas.height);
+			context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+			const blob = await new Promise<Blob | null>((resolve) =>
+				canvas.toBlob(resolve, 'image/jpeg', 0.85)
+			);
+			if (!blob) throw new Error('could not encode image');
+			return blob;
+		} finally {
+			URL.revokeObjectURL(objectUrl);
+		}
+	}
+
+	async function handleScreenshot(event: Event) {
+		const element = event.currentTarget as HTMLInputElement;
+		const file = element.files?.[0];
+		element.value = '';
+
+		if (!file) return;
+
+		error = '';
+		warnings = [];
+		loadingImage = true;
+
+		try {
+			const blob = await resizeImage(file);
+			const form = new FormData();
+			form.append('image', blob, 'capture.jpg');
+
+			const response = await fetch('/api/import/image', { method: 'POST', body: form });
+			const result = (await response.json().catch(() => null)) as ImportResult | null;
+
+			if (!response.ok || !result || !result.product.title) {
+				error = result?.error ?? 'Impossible de lire cette capture.';
+				warnings = result?.warnings ?? [];
+				return;
+			}
+
+			warnings = result.warnings ?? [];
+			onImported(result);
+		} catch {
+			error = 'Impossible de préparer cette capture. Essayez une autre image.';
+		} finally {
+			loadingImage = false;
 		}
 	}
 
@@ -230,6 +299,41 @@
 					{/if}
 				</button>
 			</div>
+
+			<div class="flex items-center gap-3">
+				<span class="h-px flex-1 bg-slate-100"></span>
+				<span class="text-xs tracking-wide text-slate-400 uppercase">ou</span>
+				<span class="h-px flex-1 bg-slate-100"></span>
+			</div>
+
+			<input
+				bind:this={fileInput}
+				type="file"
+				accept="image/*"
+				class="sr-only"
+				onchange={handleScreenshot}
+			/>
+			<button
+				type="button"
+				disabled={loading || loadingImage}
+				onclick={() => fileInput?.click()}
+				class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 font-medium text-slate-700 transition hover:bg-slate-50 focus:ring-2 focus:ring-slate-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+			>
+				{#if loadingImage}
+					<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+						></circle>
+						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+						></path>
+					</svg>
+					Lecture de la capture…
+				{:else}
+					📷 Ajouter depuis une capture d’écran
+				{/if}
+			</button>
+			<p class="text-center text-xs text-slate-400">
+				La capture n’est pas conservée. Elle sert uniquement à remplir le formulaire.
+			</p>
 
 			<div class="border-t border-slate-100 pt-4 text-center">
 				<button
